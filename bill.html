@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Checkout | LUXE</title>
+    <script src="https://www.paypal.com/sdk/js?client-id=test&currency=USD"></script>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #6366f1;
+            --bg: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .billing-card {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            display: flex;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-section {
+            padding: 40px;
+            flex: 1.2;
+        }
+
+        .summary-section {
+            background: #f8fafc;
+            padding: 40px;
+            flex: 1;
+            border-left: 1px solid #e2e8f0;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: var(--primary);
+            margin-bottom: 25px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+
+        .total-row {
+            border-top: 2px solid #e2e8f0;
+            padding-top: 15px;
+            margin-top: 15px;
+            font-weight: 800;
+            font-size: 1.3rem;
+            color: var(--primary);
+            margin-bottom: 25px;
+        }
+
+        .billing-card {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #f1f5f9;
+}
+
+        #paypal-button-container {
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .billing-card {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="billing-card">
+        <div class="form-section">
+            <h2>Shipping Details</h2>
+            <form id="shippingForm">
+                <div class="input-group">
+                    <label>Full Name</label>
+                    <input type="text" id="fullName" placeholder="John Doe" required>
+                </div>
+                <div class="input-group">
+                    <label>Email Address</label>
+                    <input type="email" id="email" placeholder="john@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label>Delivery Address</label>
+                    <input type="text" id="address" placeholder="123 Luxury St" required>
+                </div>
+            </form>
+        </div>
+
+        <div class="summary-section">
+            <h2>Order Summary</h2>
+            <div id="itemList"></div>
+            <div class="total-row">
+                <span>Total</span>
+                <span id="displayTotal" style="float: right;">$0.00</span>
+            </div>
+
+            <div id="paypal-button-container"></div>
+
+            <p style="text-align: center; margin-top: 20px;"><a href="index.html"
+                    style="color: #64748b; font-size: 0.8rem; text-decoration: none;">← Back to Shop</a></p>
+        </div>
+    </div>
+
+    <script>
+        const cart = JSON.parse(localStorage.getItem('watchCart')) || {};
+        const totalAmount = localStorage.getItem('finalTotal') || 0;
+        const listDiv = document.getElementById('itemList');
+
+        // Populate the UI
+        Object.values(cart).forEach(item => {
+            listDiv.innerHTML += `
+            <div class="item-row">
+                <span>${item.name} (x${item.qty})</span>
+                <span>$${(item.price * item.qty).toLocaleString()}</span>
+            </div>
+        `;
+        });
+        document.getElementById('displayTotal').innerText = `$${Number(totalAmount).toLocaleString()}`;
+
+        // PayPal Integration
+        paypal.Buttons({
+            createOrder: function (data, actions) {
+                return actions.order.create({
+                    purchase_units: [{
+                        amount: {
+                            value: totalAmount // This is the total price from landing page
+                        }
+                    }]
+                });
+            },
+            onApprove: function (data, actions) {
+                return actions.order.capture().then(function (details) {
+                    alert('Transaction completed by ' + details.payer.name.given_name + '!');
+                    localStorage.clear();
+                    window.location.href = 'index.html';
+                });
+            },
+            onError: function (err) {
+                console.error('PayPal Error:', err);
+                alert('Something went wrong with the payment. Please try again.');
+            }
+        }).render('#paypal-button-container');
+    </script>
+
+</body>
+
+</html>
